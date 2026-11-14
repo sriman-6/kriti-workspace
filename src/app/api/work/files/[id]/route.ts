@@ -20,7 +20,7 @@ export async function GET(
     let body: ReadableStream<Uint8Array> | Uint8Array;
     if (file.blobPath) {
       const blob = await openWorkBlob(file.blobPath);
-      if (blob.blob.size !== file.size) {
+      if (blob.size !== file.size) {
         await blob.stream.cancel();
         return new Response('File unavailable.', { status: 404 });
       }

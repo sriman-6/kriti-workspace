@@ -82,7 +82,7 @@ describe('private file streaming', () => {
   it('streams a 5 MB private object with download protections and no fixed response length', async () => {
     const size = 5 * 1024 * 1024;
     state.download.mockResolvedValue({ name: 'private.pdf', size, contentType: 'application/pdf', blobPath: pathname, content: null });
-    state.open.mockResolvedValue({ blob: { size }, stream: new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(new Uint8Array(size)); controller.close(); } }) });
+    state.open.mockResolvedValue({ size, stream: new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(new Uint8Array(size)); controller.close(); } }) });
     const response = await download(new Request('http://localhost:3002'), params);
     expect(response.body).toBeInstanceOf(ReadableStream);
     expect((await response.arrayBuffer()).byteLength).toBe(size);

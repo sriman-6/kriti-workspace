@@ -1,19 +1,28 @@
 import 'server-only';
-import { del, get } from '@vercel/blob';
+import { BlobNotFoundError, del, get, head } from '@vercel/blob';
 import { ForbiddenError, NotFoundError } from '@/lib/errors';
 import { MAX_FILE_BYTES } from '@/lib/workspace';
 
 // Only server-generated pathnames from our database reach the SDK. Browser URLs
 // and credentials are never accepted as storage references.
 export async function openWorkBlob(pathname: string) {
-  const result = await get(pathname, { access: 'private', useCache: false });
-  if (result?.statusCode !== 200) throw new NotFoundError();
-  return result;
+  try {
+    // Private text responses can be compressed/chunked with no Content-Length.
+    // The SDK then reports get().blob.size = 0, despite streaming every byte.
+    // Use canonical object metadata; validate the actual stream separately.
+    const metadata = await head(pathname);
+    const result = await get(pathname, { access: 'private', useCache: false });
+    if (result?.statusCode !== 200) throw new NotFoundError();
+    return { stream: result.stream, size: metadata.size };
+  } catch (error) {
+    if (error instanceof BlobNotFoundError) throw new NotFoundError();
+    throw error;
+  }
 }
 
 export async function readWorkBlob(pathname: string, expectedSize: number) {
   const result = await openWorkBlob(pathname);
-  if (result.blob.size !== expectedSize || result.blob.size > MAX_FILE_BYTES) {
+  if (result.size !== expectedSize || result.size > MAX_FILE_BYTES) {
     await result.stream.cancel();
     throw new ForbiddenError('The uploaded file size does not match. Choose the file again.');
   }
