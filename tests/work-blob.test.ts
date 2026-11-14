@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type * as VercelBlob from '@vercel/blob';
 const sdk = vi.hoisted(() => ({ get: vi.fn(), head: vi.fn(), del: vi.fn() }));
 vi.mock('@vercel/blob', async () => ({
-  ...await vi.importActual<typeof import('@vercel/blob')>('@vercel/blob'),
+  ...await vi.importActual<typeof VercelBlob>('@vercel/blob'),
   get: sdk.get, head: sdk.head, del: sdk.del,
 }));
 import { openWorkBlob, readWorkBlob } from '@/lib/storage/work-blob';
