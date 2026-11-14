@@ -1,0 +1,15 @@
+# Local records, backups and credentials must never enter a deployment upload.
+node_modules/
+.next/
+.git/
+.vercel/
+local-db/
+.backups/
+.env
+.env.*
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+.npmrc
+npm-debug.log*

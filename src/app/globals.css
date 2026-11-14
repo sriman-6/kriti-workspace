@@ -1,0 +1,230 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens (docs/05 §5.1)
+
+   Restrained on purpose. This is an internal operations tool: colour carries
+   meaning — status, risk, derivation — and is never decorative.
+--------------------------------------------------------------------------- */
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.21 0.006 285.9);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.006 285.9);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.006 285.9);
+  --primary: oklch(0.45 0.16 264);
+  --primary-foreground: oklch(0.98 0.002 247.9);
+  --secondary: oklch(0.967 0.001 286.4);
+  --secondary-foreground: oklch(0.21 0.006 285.9);
+  --muted: oklch(0.967 0.001 286.4);
+  --muted-foreground: oklch(0.552 0.014 285.9);
+  --accent: oklch(0.967 0.001 286.4);
+  --accent-foreground: oklch(0.21 0.006 285.9);
+  --destructive: oklch(0.577 0.245 27.3);
+  --destructive-foreground: oklch(0.98 0.002 247.9);
+  --border: oklch(0.92 0.004 286.3);
+  --input: oklch(0.92 0.004 286.3);
+  --ring: oklch(0.45 0.16 264);
+
+  /* Semantic status — the only place colour is used */
+  --positive: oklch(0.52 0.13 152);
+  --positive-surface: oklch(0.95 0.04 152);
+  --attention: oklch(0.58 0.13 79);
+  --attention-surface: oklch(0.96 0.05 92);
+  --critical: oklch(0.55 0.2 27);
+  --critical-surface: oklch(0.95 0.03 27);
+  --info: oklch(0.53 0.13 250);
+  --info-surface: oklch(0.96 0.03 250);
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: oklch(0.17 0.005 285.8);
+  --foreground: oklch(0.96 0.001 286.4);
+  --card: oklch(0.21 0.006 285.9);
+  --card-foreground: oklch(0.96 0.001 286.4);
+  --popover: oklch(0.21 0.006 285.9);
+  --popover-foreground: oklch(0.96 0.001 286.4);
+  --primary: oklch(0.7 0.14 258);
+  --primary-foreground: oklch(0.17 0.005 285.8);
+  --secondary: oklch(0.274 0.006 286);
+  --secondary-foreground: oklch(0.96 0.001 286.4);
+  --muted: oklch(0.274 0.006 286);
+  --muted-foreground: oklch(0.712 0.013 286.1);
+  --accent: oklch(0.274 0.006 286);
+  --accent-foreground: oklch(0.96 0.001 286.4);
+  --destructive: oklch(0.62 0.21 25.8);
+  --destructive-foreground: oklch(0.96 0.001 286.4);
+  --border: oklch(0.3 0.006 286);
+  --input: oklch(0.32 0.006 286);
+  --ring: oklch(0.7 0.14 258);
+
+  --positive: oklch(0.72 0.15 152);
+  --positive-surface: oklch(0.28 0.05 152);
+  --attention: oklch(0.78 0.13 85);
+  --attention-surface: oklch(0.3 0.05 85);
+  --critical: oklch(0.7 0.17 25);
+  --critical-surface: oklch(0.29 0.07 25);
+  --info: oklch(0.72 0.12 250);
+  --info-surface: oklch(0.28 0.05 250);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-positive: var(--positive);
+  --color-positive-surface: var(--positive-surface);
+  --color-attention: var(--attention);
+  --color-attention-surface: var(--attention-surface);
+  --color-critical: var(--critical);
+  --color-critical-surface: var(--critical-surface);
+  --color-info: var(--info);
+  --color-info-surface: var(--info-surface);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', monospace;
+}
+
+@layer base {
+  #main-content { overflow-wrap: anywhere; min-width: 0; }
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Visible, consistent focus for keyboard users everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Numeric columns line up: marks, percentages, BITS IDs. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Overlay and side-sheet transitions. Two small keyframes rather than an
+   animation plugin — these are the only animations in the application. */
+@layer utilities {
+  @keyframes kriti-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes kriti-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  @keyframes kriti-slide-in {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes kriti-slide-out {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
+  }
+
+  .kriti-overlay[data-state='open'] { animation: kriti-fade-in 150ms ease-out; }
+  .kriti-overlay[data-state='closed'] { animation: kriti-fade-out 120ms ease-in; }
+  .kriti-sheet[data-state='open'] { animation: kriti-slide-in 180ms ease-out; }
+  .kriti-sheet[data-state='closed'] { animation: kriti-slide-out 150ms ease-in; }
+}
+
+/* Print: reports are the only screen designed to go on paper. The app chrome
+   is hidden by `print:hidden` utilities; this handles the page itself. */
+@media print {
+  :root {
+    --background: #fff;
+    --foreground: #000;
+    --muted-foreground: #444;
+    --border: #999;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* The sidebar and top bar are chrome, never printed. */
+  aside,
+  header {
+    display: none !important;
+  }
+
+  /* The shell offsets content for the fixed sidebar; on paper there is none. */
+  main {
+    padding: 0 !important;
+  }
+
+  .lg\:pl-60 {
+    padding-left: 0 !important;
+  }
+
+  table {
+    font-size: 10pt;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    border: 1px solid #999 !important;
+    padding: 2pt 4pt !important;
+  }
+
+  /* Repeat headers across pages and avoid splitting a row. */
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

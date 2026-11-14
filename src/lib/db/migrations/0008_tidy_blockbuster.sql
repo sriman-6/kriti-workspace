@@ -1,0 +1,1 @@
+ALTER TABLE "workspace_profiles" ADD COLUMN "programme_creation_allowed" boolean DEFAULT false NOT NULL;

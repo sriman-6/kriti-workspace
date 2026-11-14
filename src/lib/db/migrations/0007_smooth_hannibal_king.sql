@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "external_google_approved" boolean DEFAULT false NOT NULL;
