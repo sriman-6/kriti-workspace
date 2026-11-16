@@ -8,6 +8,7 @@ import {
   createTrackerSheet,
   addTrackerColumn,
   updateTracker,
+  deleteTracker,
   getTrackerHistory,
   getTrackerResources,
 } from '@/lib/services/tracker';
@@ -16,6 +17,7 @@ import {
   trackerRowInput,
   trackerSettingsInput,
   trackerColumnInput,
+  trackerDeleteInput,
 } from '@/lib/schemas/tracker';
 import { assertSameOrigin, readUploadJson } from '@/lib/http/upload-request';
 import { PROGRAMME_ROLES } from '@/lib/workspace';
@@ -43,6 +45,10 @@ const operation = z.discriminatedUnion('operation', [
   z.object({
     operation: z.literal('settings'),
     settings: trackerSettingsInput,
+  }),
+  z.object({
+    operation: z.literal('delete'),
+    deletion: trackerDeleteInput,
   }),
   z.object({
     operation: z.literal('member'),
@@ -128,6 +134,8 @@ export async function POST(
       );
     else if (input.operation === 'settings')
       await updateTracker(user, id, input.settings);
+    else if (input.operation === 'delete')
+      await deleteTracker(user, id, input.deletion);
     else if (input.operation === 'member')
       await configureProgrammeMember(user, {
         programmeId: id,

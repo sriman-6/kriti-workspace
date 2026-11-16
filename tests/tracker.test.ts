@@ -24,6 +24,9 @@ const {
   ideaMembers,
   trackerRows,
   trackerUploads,
+  programmes,
+  trackerSheets,
+  trackerEvents,
   workTasks,
 } = await import('@/lib/db/schema');
 const {
@@ -34,13 +37,15 @@ const {
   addTrackerColumn,
   archiveTrackerRow,
   updateTracker,
+  deleteTracker,
   getTrackerHistory,
+  getTrackerResources,
   reserveTrackerUploads,
   authorizeTrackerUpload,
   downloadTrackerFile,
   cleanupTrackerUploads,
 } = await import('@/lib/services/tracker');
-const { createWork, createProgramme, editWork, getWorkspaceAccess } =
+const { createWork, createProgramme, editWork, getWorkspaceAccess, getWorkDetail } =
   await import('@/lib/services/workspace');
 const { saveIdea, getIdea, listIdeas, listIdeaPeople } = await import(
   '@/lib/services/collaboration'
@@ -115,6 +120,43 @@ const row = (extra = {}) => ({
 });
 
 describe('master tracker and linked work', () => {
+  it('limits deletion to tracker managers, guards stale confirmation and preserves linked work and history', async () => {
+    const programmeId = await createProgramme(people.head!, {
+      name: 'Tracker to remove', code: 'REMOVE-TRACKER', description: '',
+    });
+    await holder.db.insert(programmeMembers).values([
+      { programmeId, userId: people.manager!.id, role: 'manager' },
+      { programmeId, userId: people.intern!.id, role: 'member' },
+    ]);
+    const sheetId = await createTrackerSheet(people.manager!, programmeId, 'Related records');
+    const [upload] = await reserveTrackerUploads(people.intern!, programmeId, [{ name: 'report.pdf', size: pdf.length }]);
+    const record = row({ sheetId, uploadIds: [upload!.id] });
+    await saveTrackerRow(people.intern!, programmeId, record);
+    expect((await downloadTrackerFile(people.intern!, upload!.id)).name).toBe('report.pdf');
+    const workId = await createWork(people.intern!, {
+      title: 'Assignment kept after tracker deletion', description: '', programmeId,
+      ownerId: people.intern!.id, reviewerId: null, dueOn: null, priority: 'normal',
+    });
+    const detail = await getTracker(people.manager!, programmeId);
+    const deletion = { version: detail.programme.version, confirmation: 'DELETE' };
+    await expect(deleteTracker(people.intern!, programmeId, deletion)).rejects.toThrow('manage');
+    await expect(deleteTracker(people.program_head!, programmeId, deletion)).rejects.toThrow('unavailable');
+    await expect(deleteTracker(people.manager!, programmeId, { ...deletion, confirmation: '' })).rejects.toThrow();
+    await expect(deleteTracker(people.manager!, programmeId, { ...deletion, version: detail.programme.version + 1 })).rejects.toThrow('changed');
+    expect((await getTracker(people.manager!, programmeId)).programme.id).toBe(programmeId);
+    await deleteTracker(people.manager!, programmeId, deletion);
+    expect((await getMasterTracker(people.head!)).some((item) => item.id === programmeId)).toBe(false);
+    await expect(getTracker(people.head!, programmeId)).rejects.toThrow('unavailable');
+    await expect(getTracker(people.manager!, programmeId, sheetId)).rejects.toThrow('unavailable');
+    await expect(getTrackerResources(people.head!, programmeId)).rejects.toThrow('unavailable');
+    await expect(downloadTrackerFile(people.intern!, upload!.id)).rejects.toThrow();
+    expect((await getWorkDetail(people.intern!, workId)).task.id).toBe(workId);
+    expect((await holder.db.select().from(programmes).where(eq(programmes.id, programmeId)))[0]?.isActive).toBe(false);
+    expect((await holder.db.select().from(trackerRows).where(eq(trackerRows.id, record.id)))).toHaveLength(1);
+    expect((await holder.db.select().from(trackerSheets).where(eq(trackerSheets.id, sheetId)))).toHaveLength(1);
+    expect((await holder.db.select().from(trackerUploads).where(eq(trackerUploads.id, upload!.id)))).toHaveLength(1);
+    expect((await holder.db.select().from(trackerEvents).where(eq(trackerEvents.programmeId, programmeId))).some((event) => event.message === 'Deleted tracker Tracker to remove')).toBe(true);
+  });
   it('creates, lists and renames trackers with full research project titles', async () => {
     const name = 'A Dual-Approach Framework for Sustainable Menstrual Hygiene: Reusable Cloth Pads and Coffee-Pulp-Based Biodegradable Absorbents';
     expect(name.length).toBeGreaterThan(120);

@@ -25,6 +25,7 @@ import {
   trackerRowInput,
   trackerSettingsInput,
   trackerColumnInput,
+  trackerDeleteInput,
   type TrackerRowInput,
 } from '@/lib/schemas/tracker';
 import {
@@ -642,6 +643,30 @@ export async function updateTracker(
         description: input.description,
         stage: input.stage,
       },
+    });
+  });
+}
+export async function deleteTracker(
+  user: User,
+  id: string,
+  raw: Parameters<typeof trackerDeleteInput.parse>[0],
+) {
+  const input = trackerDeleteInput.parse(raw);
+  const scope = await programmeFor(user, id);
+  if (!scope.canManage)
+    throw new ForbiddenError('Only people who manage this tracker can delete it.');
+  await db.transaction(async (tx) => {
+    const [deleted] = await tx.update(programmes)
+      .set({ isActive: false, version: input.version + 1, updatedAt: new Date() })
+      .where(and(eq(programmes.id, id), eq(programmes.isActive, true), eq(programmes.version, input.version)))
+      .returning();
+    if (!deleted)
+      throw new ForbiddenError('This tracker changed. Cancel deletion and review its latest details.');
+    await tx.insert(trackerEvents).values({
+      programmeId: id,
+      actorId: user.id,
+      message: `Deleted tracker ${deleted.name}`,
+      snapshot: { name: deleted.name, stage: deleted.stage, isActive: false },
     });
   });
 }

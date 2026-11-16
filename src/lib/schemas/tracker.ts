@@ -66,4 +66,8 @@ export const trackerColumnInput = z.object({
   label: z.string().trim().min(1).max(50),
   type: z.enum(['text', 'date', 'number', 'url']),
 });
+export const trackerDeleteInput = z.object({
+  version: z.number().int().nonnegative(),
+  confirmation: z.literal('DELETE', { error: 'Type DELETE to confirm.' }),
+});
 export type TrackerRowInput = z.infer<typeof trackerRowInput>;

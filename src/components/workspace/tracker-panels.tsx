@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PROGRAMME_NAME_MAX_LENGTH, ROW_STATUSES, TRACKER_STAGES } from '@/lib/tracker';
@@ -183,7 +185,61 @@ export function TrackerSettings({
       <p role="status" className="text-xs text-muted-foreground">
         {saved}
       </p>
+      {detail.canManage ? <TrackerDelete detail={detail} /> : null}
     </div>
+  );
+}
+function TrackerDelete({ detail }: { detail: TrackerDetail }) {
+  const router = useRouter();
+  const [target, setTarget] = useState<{ name: string; version: number } | null>(null);
+  const [confirmation, setConfirmation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  return (
+    <section className="space-y-3 border-t pt-4" aria-label="Delete tracker">
+      {target ? (
+        <form className="space-y-3" onSubmit={async (event) => {
+          event.preventDefault();
+          if (busy || confirmation !== 'DELETE') return;
+          setBusy(true);
+          setError('');
+          try {
+            await trackerRequest(detail.programme.id, {
+              operation: 'delete',
+              deletion: { version: target.version, confirmation },
+            });
+            router.replace('/programmes');
+            router.refresh();
+          } catch (cause) {
+            setError(cause instanceof Error ? cause.message : 'Unable to delete this tracker.');
+            setBusy(false);
+          }
+        }}>
+          <p className="text-sm font-medium [overflow-wrap:anywhere]">Delete “{target.name}”?</p>
+          <p id="tracker-delete-impact" className="text-xs leading-relaxed text-muted-foreground">
+            This removes the tracker, its rows, files and related trackers from
+            everyone’s workspace. Existing tasks and submissions remain in My Work.
+          </p>
+          <Label htmlFor="tracker-delete-confirmation">Type DELETE to confirm</Label>
+          <Input id="tracker-delete-confirmation" value={confirmation}
+            onChange={(event) => setConfirmation(event.target.value)}
+            aria-describedby="tracker-delete-impact" autoComplete="off"
+            disabled={busy} autoFocus />
+          {error ? <p role="alert" className="text-xs text-destructive">{error}</p> : null}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={busy}
+              onClick={() => { setTarget(null); setConfirmation(''); setError(''); }}>Cancel</Button>
+            <Button size="sm" variant="destructive" disabled={busy || confirmation !== 'DELETE'}>
+              {busy ? 'Deleting…' : 'Delete tracker'}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <Button size="sm" variant="destructive" onClick={() => setTarget({
+          name: detail.programme.name, version: detail.programme.version,
+        })}>Delete tracker</Button>
+      )}
+    </section>
   );
 }
 export function TrackerHistory({

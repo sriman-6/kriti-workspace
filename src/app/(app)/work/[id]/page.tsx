@@ -54,10 +54,10 @@ export default async function TaskPage({
   );
   const [choices, programmes, access] = await Promise.all([
     canEdit ? getWorkSharingPeople() : [],
-    canEdit && editable ? listProgrammes(user) : [],
+    listProgrammes(user),
     getWorkspaceAccess(user),
   ]);
-  const trackerVisible = task.programmeId && (access.canConfigure || access.memberships.some((member) => member.programmeId === task.programmeId));
+  const trackerVisible = programmes.some((programme) => programme.id === task.programmeId);
   const hidden = (
     <>
       <input type="hidden" name="taskId" value={id} />
