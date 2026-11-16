@@ -37,6 +37,7 @@ export function TaskFields({
     (ownWork ? ownProgrammeIds : delegateProgrammeIds).includes(programme.id));
   return (
     <>
+      {defaults?.trackerSheetId ? <input type="hidden" name="trackerSheetId" value={defaults.trackerSheetId} /> : null}
       <div className="space-y-1.5">
         <Label htmlFor={`${prefix}-title`}>Task</Label>
         <Input

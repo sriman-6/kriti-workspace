@@ -32,6 +32,7 @@ import {
 import { getWorkspaceAccess, getWorkspacePeople } from './workspace';
 import { ForbiddenError, NotFoundError } from '@/lib/errors';
 import type { MeetingInput } from '@/lib/schemas/collaboration';
+import { canUseIdeas } from '@/lib/workspace';
 
 export async function listContacts(user: User) {
   const people = await getWorkspacePeople(user);
@@ -521,6 +522,7 @@ export async function markGroupRead(user: User, id: string) {
     .where(and(eq(groupMembers.groupId, id), eq(groupMembers.userId, user.id)));
 }
 export async function listIdeas(user: User) {
+  if (!canUseIdeas((await getWorkspaceAccess(user)).role)) return [];
   const shared = await db
     .select({ id: ideaMembers.ideaId })
     .from(ideaMembers)
@@ -544,8 +546,16 @@ export async function getIdea(user: User, id: string) {
     .select({ id: users.id, fullName: users.fullName })
     .from(ideaMembers)
     .innerJoin(users, eq(users.id, ideaMembers.userId))
-    .where(eq(ideaMembers.ideaId, id));
+    .innerJoin(workspaceProfiles, eq(workspaceProfiles.userId, users.id))
+    .where(and(eq(ideaMembers.ideaId, id), eq(users.isActive, true), inArray(workspaceProfiles.role, ['head', 'associate_head', 'nucleus'])));
   return { idea: visible, members };
+}
+export async function listIdeaPeople(user: User) {
+  if (!canUseIdeas((await getWorkspaceAccess(user)).role)) throw new ForbiddenError('Ideas are available to the Head, Associate Heads and Nucleus members.');
+  return db.select({ id: users.id, fullName: users.fullName }).from(users)
+    .innerJoin(workspaceProfiles, eq(workspaceProfiles.userId, users.id))
+    .where(and(eq(users.isActive, true), inArray(workspaceProfiles.role, ['head', 'associate_head', 'nucleus'])))
+    .orderBy(asc(users.fullName));
 }
 export async function saveIdea(
   user: User,
@@ -553,7 +563,9 @@ export async function saveIdea(
   id?: string,
   version?: number,
 ) {
-  await assertContacts(user, input.memberIds);
+  const eligible = await listIdeaPeople(user);
+  if (input.memberIds.some((id) => !eligible.some((person) => person.id === id)))
+    throw new ForbiddenError('Share ideas only with the Head, Associate Heads and Nucleus members.');
   return db.transaction(async (tx) => {
     let row: typeof ideas.$inferSelect | undefined;
     if (id) {

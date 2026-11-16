@@ -261,7 +261,7 @@ describe('programme creation by KRITI responsibility', () => {
       expect((await getWorkspaceAccess(account!)).canCreateProgrammes).toBe(allowed);
       const create = createProgramme(account!, { name: `Created by ${role}`, code: `CREATE-${role.replaceAll('_', '-')}`, description: '' });
       if (allowed) {
-        await expect(create).resolves.toBeUndefined();
+        await expect(create).resolves.toMatch(/^[a-f0-9-]{36}$/);
         const rows = await listProgrammes(account!);
         const programme = rows.find((item) => item.name === `Created by ${role}`)!;
         expect((await getWorkspaceAccess(account!)).memberships).toContainEqual({ programmeId: programme.id, role: 'lead' });

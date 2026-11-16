@@ -57,6 +57,7 @@ export default async function TaskPage({
     canEdit && editable ? listProgrammes(user) : [],
     getWorkspaceAccess(user),
   ]);
+  const trackerVisible = task.programmeId && (access.canConfigure || access.memberships.some((member) => member.programmeId === task.programmeId));
   const hidden = (
     <>
       <input type="hidden" name="taskId" value={id} />
@@ -72,6 +73,7 @@ export default async function TaskPage({
         >
           ← Work
         </Link>
+        {trackerVisible ? <Link href={`/programmes/${task.programmeId}${task.trackerSheetId ? `?sheet=${task.trackerSheetId}` : ''}`} className="ml-4 text-sm text-primary hover:underline">Open programme tracker →</Link> : null}
         <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
           <h1 className="max-w-xl break-words text-2xl font-semibold tracking-tight">
             {task.title}

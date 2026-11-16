@@ -35,6 +35,9 @@ export const WORK_STATUS_LABELS = {
   cancelled: 'Cancelled',
 } as const;
 export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
+export function canUseIdeas(role: WorkspaceRole | null | undefined) {
+  return role === 'head' || role === 'associate_head' || role === 'nucleus';
+}
 export type WorkStatus = keyof typeof WORK_STATUS_LABELS;
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_SUBMISSION_FILES = 3;

@@ -33,6 +33,7 @@ import {
 } from '@/lib/services/workspace';
 
 function refresh(taskId?: string) {
+  revalidatePath('/programmes', 'layout');
   for (const path of ['/dashboard', '/work', '/people', '/programmes'])
     revalidatePath(path);
   if (taskId) revalidatePath(`/work/${taskId}`);
@@ -166,15 +167,19 @@ export async function programmeAction(
   data: FormData,
 ): Promise<FormState> {
   const user = await requireUser();
-  return runAction(
+  let programmeId = '';
+  if (!data.get('code')) data.set('code', `P-${crypto.randomUUID().slice(0, 8).toUpperCase()}`);
+  const state = await runAction(
     programmeSchema,
     data,
     async (input) => {
-      await createProgramme(user, input);
+      programmeId = await createProgramme(user, input);
       refresh();
     },
     'Programme created.',
   );
+  if (state.status === 'success') redirect(`/programmes/${programmeId}`);
+  return state;
 }
 export async function personAction(
   _state: FormState,

@@ -17,6 +17,7 @@ import {
 import { db, type Database } from '@/lib/db';
 import {
   programmeMembers,
+  trackerSheets,
   programmes,
   users,
   workspaceProfiles,
@@ -283,6 +284,10 @@ export async function getWorkDetail(user: User, taskId: string) {
   };
 }
 async function assertParticipants(connection: Connection, input: TaskInput, selfCreated: boolean) {
+  if (input.trackerSheetId) {
+    const [sheet] = await connection.select().from(trackerSheets).where(eq(trackerSheets.id, input.trackerSheetId));
+    if (!sheet || sheet.programmeId !== input.programmeId) throw new ForbiddenError('Choose a tracker within this programme.');
+  }
   const ids = [...new Set([input.ownerId, ...(input.reviewerId ? [input.reviewerId] : [])])];
   if (input.ownerId === input.reviewerId || (!selfCreated && !input.reviewerId))
     throw new ForbiddenError('Delegated work needs a reviewer other than the owner.');
@@ -420,11 +425,12 @@ export async function editWork(
       throw new ForbiddenError(
         'Resolve the current review before changing this assignment. Completed and cancelled tasks are retained as history.',
       );
-    await assertParticipants(tx, input, input.ownerId === task.assignerId);
+    const placement = { ...input, trackerSheetId: input.trackerSheetId === undefined ? (input.programmeId === task.programmeId ? task.trackerSheetId : null) : input.trackerSheetId };
+    await assertParticipants(tx, placement, input.ownerId === task.assignerId);
     await assertViewers(tx, input.viewerIds ?? []);
     await tx
       .update(workTasks)
-      .set({ ...input, viewerIds: input.viewerIds ?? [], version: task.version + 1, updatedAt: new Date() })
+      .set({ ...placement, viewerIds: input.viewerIds ?? [], version: task.version + 1, updatedAt: new Date() })
       .where(eq(workTasks.id, task.id));
     await tx.insert(workEvents).values({
       taskId,
@@ -840,15 +846,16 @@ export async function configureWorkspacePerson(
 }
 export async function createProgramme(
   user: User,
-  input: { name: string; code: string; description: string },
+  input: { name: string; code: string; description: string; kind?: 'programme' | 'project'; stage?: 'unset' | 'planning' | 'ongoing' | 'completed' | 'on_hold' },
 ) {
   if (!(await getWorkspaceAccess(user)).canCreateProgrammes)
     throw new ForbiddenError('Your KRITI responsibility does not allow programme creation.');
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const [record] = await tx.insert(programmes)
       .values({ ...input, code: input.code.toUpperCase() }).onConflictDoNothing().returning();
     if (!record) throw new ForbiddenError('That programme code is already in use.');
     await tx.insert(programmeMembers).values({ programmeId: record.id, userId: user.id, role: 'lead' });
+    return record.id;
   });
 }
 export async function configureProgrammeMember(

@@ -7,11 +7,13 @@ const state = vi.hoisted(() => ({
   mode: { workFileStorage: 'vercel-blob' },
   reserve: vi.fn(), authorize: vi.fn(), download: vi.fn(), open: vi.fn(), cleanup: vi.fn(),
   chatCleanup: vi.fn(),
+  trackerCleanup: vi.fn(),
 }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentUser: async () => state.user }));
 vi.mock('@/lib/env', () => ({ env: state.mode, assertProductionConfig: vi.fn() }));
 vi.mock('@/lib/services/workspace', () => ({ reserveWorkUploads: state.reserve, authorizeWorkUpload: state.authorize, downloadWorkFile: state.download, cleanupWorkUploads: state.cleanup }));
 vi.mock('@/lib/services/chat', () => ({ cleanupChatUploads: state.chatCleanup }));
+vi.mock('@/lib/services/tracker', () => ({ cleanupTrackerUploads: state.trackerCleanup }));
 vi.mock('@/lib/storage/work-blob', () => ({ openWorkBlob: state.open }));
 const { POST: reserve } = await import('@/app/api/work/uploads/reserve/route');
 const { POST: token } = await import('@/app/api/work/uploads/route');
@@ -31,6 +33,7 @@ beforeEach(() => {
     validUntil: Date.now() + 300000, allowOverwrite: false, addRandomSuffix: false });
   state.download.mockReset(); state.open.mockReset(); state.cleanup.mockReset().mockResolvedValue(1);
   state.chatCleanup.mockReset().mockResolvedValue(0);
+  state.trackerCleanup.mockReset().mockResolvedValue(0);
   // Synthetic signing credential, valid nowhere; no network or real credentials.
   vi.stubEnv('BLOB_READ_WRITE_TOKEN', 'vercel_blob_rw_teststore_synthetic-signing-key');
 });

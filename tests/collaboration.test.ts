@@ -230,7 +230,7 @@ describe('private work groups', () => {
 });
 describe('ideas and accountable initiatives', () => {
   it('keeps notes private by default, including from Head', async () => {
-    const id = await saveIdea(intern, {
+    const id = await saveIdea(lead, {
       title: 'Private thought',
       body: 'Rough notes.',
       memberIds: [],
@@ -239,25 +239,25 @@ describe('ideas and accountable initiatives', () => {
     await expect(getIdea(head, id)).rejects.toThrow();
   });
   it('lets the author share and revoke access while blocking others from editing', async () => {
-    const id = await saveIdea(intern, {
+    const id = await saveIdea(lead, {
       title: 'Shared idea',
       body: 'Explore together.',
-      memberIds: [lead.id],
+      memberIds: [head.id],
     });
-    expect((await getIdea(lead, id)).idea.body).toBe('Explore together.');
+    expect((await getIdea(head, id)).idea.body).toBe('Explore together.');
     await expect(
-      saveIdea(lead, { title: 'Overwrite', body: '', memberIds: [] }, id, 0),
+      saveIdea(head, { title: 'Overwrite', body: '', memberIds: [] }, id, 0),
     ).rejects.toThrow('author');
     await saveIdea(
-      intern,
+      lead,
       { title: 'Shared idea', body: 'Private again.', memberIds: [] },
       id,
       0,
     );
-    await expect(getIdea(lead, id)).rejects.toThrow();
+    await expect(getIdea(head, id)).rejects.toThrow();
   });
   it('requires Head activation, creates lead scope and avoids duplicate initiatives', async () => {
-    const id = await saveIdea(intern, {
+    const id = await saveIdea(lead, {
       title: 'Faculty initiative',
       body: 'Connect research and delivery.',
       memberIds: [head.id, lead.id],

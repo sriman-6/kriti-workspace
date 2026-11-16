@@ -6,7 +6,7 @@ export function assertSameOrigin(request: Request) {
     throw new ForbiddenError('Refresh this page before uploading.');
 }
 
-export async function readUploadJson(request: Request): Promise<unknown> {
+export async function readUploadJson(request: Request, maximumBytes = 16 * 1024): Promise<unknown> {
   if (!request.headers.get('content-type')?.startsWith('application/json') || !request.body)
     throw new ForbiddenError('Send a valid upload request.');
   const reader = request.body.getReader();
@@ -17,7 +17,7 @@ export async function readUploadJson(request: Request): Promise<unknown> {
       const chunk = await reader.read();
       if (chunk.done) break;
       size += chunk.value.length;
-      if (size > 16 * 1024) {
+      if (size > maximumBytes) {
         await reader.cancel();
         throw new ForbiddenError('The upload request is too large.');
       }

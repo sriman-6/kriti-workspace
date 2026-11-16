@@ -14,12 +14,13 @@ import { NotFoundError } from '@/lib/errors';
 import { z } from 'zod';
 import { getChatMessage } from '@/lib/services/chat';
 import { plainMessage } from '@/lib/chat';
+import { getTracker } from '@/lib/services/tracker';
 
 export const metadata = { title: 'Create work' };
 export default async function NewTaskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ meeting?: string; message?: string }>;
+  searchParams: Promise<{ meeting?: string; message?: string; programme?: string; sheet?: string }>;
 }) {
   const user = await requireUser();
   const [access, people, programmes] = await Promise.all([
@@ -38,6 +39,10 @@ export default async function NewTaskPage({
       ),
   );
   const source = await searchParams;
+  if (source.programme) {
+    if (!z.uuid().safeParse(source.programme).success || (source.sheet && !z.uuid().safeParse(source.sheet).success)) notFound();
+    try { await getTracker(user, source.programme, source.sheet); } catch (error) { if (error instanceof NotFoundError) notFound(); throw error; }
+  }
   let meetingBrief = '';
   let messageTitle = '';
   if (source.message) {
@@ -83,7 +88,7 @@ export default async function NewTaskPage({
           canAssignToOthers={canAssign}
           ownProgrammeIds={access.memberships.map((member) => member.programmeId)}
           delegateProgrammeIds={assignable.map((programme) => programme.id)}
-          defaults={{ title: messageTitle, description: meetingBrief, ownerId: user.id }}
+          defaults={{ title: messageTitle, description: meetingBrief, ownerId: user.id, programmeId: source.programme ?? null, trackerSheetId: source.sheet ?? null }}
         />
       </WorkForm>
     </div>

@@ -20,6 +20,7 @@
     "test:http": "tsx scripts/workspace-http-check.ts",
     "test:uploads-browser": "tsx scripts/workspace-upload-browser-check.ts",
     "test:chat-browser": "tsx scripts/chat-browser-check.ts",
+    "test:tracker-browser": "tsx scripts/tracker-browser-check.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { requireUser } from '@/lib/auth/session';
-import { getIdea, listContacts } from '@/lib/services/collaboration';
+import { getIdea, listContacts, listIdeaPeople } from '@/lib/services/collaboration';
 import { getWorkspaceAccess } from '@/lib/services/workspace';
 import { NotFoundError } from '@/lib/errors';
 import { WorkForm } from '@/components/workspace/work-form';
@@ -28,9 +28,10 @@ export default async function IdeaPage({
     throw error;
   }
   const { idea, members } = detail;
-  const [access, contacts] = await Promise.all([
+  const [access, contacts, ideaPeople] = await Promise.all([
     getWorkspaceAccess(user),
     listContacts(user),
+    listIdeaPeople(user),
   ]);
   return (
     <div className="mx-auto max-w-3xl space-y-7">
@@ -52,7 +53,7 @@ export default async function IdeaPage({
       </p>
       {idea.initiativeId ? (
         <Link
-          href={`/work?programme=${idea.initiativeId}`}
+          href={`/programmes/${idea.initiativeId}`}
           className="text-sm text-primary"
         >
           Open initiative work →
@@ -122,7 +123,7 @@ export default async function IdeaPage({
               defaultValue={idea.body}
             />
             <MemberPicker
-              people={contacts.filter((person) => person.id !== user.id)}
+              people={ideaPeople.filter((person) => person.id !== user.id)}
               selected={members.map((person) => person.id)}
               label="Shared with"
             />

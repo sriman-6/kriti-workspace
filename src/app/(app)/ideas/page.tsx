@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth/session';
-import { listIdeas, listContacts } from '@/lib/services/collaboration';
+import { listIdeas, listIdeaPeople } from '@/lib/services/collaboration';
+import { getWorkspaceAccess } from '@/lib/services/workspace';
+import { canUseIdeas } from '@/lib/workspace';
+import { notFound } from 'next/navigation';
 import { WorkForm } from '@/components/workspace/work-form';
 import { MemberPicker } from '@/components/workspace/member-picker';
 import { Input } from '@/components/ui/input';
@@ -10,13 +13,15 @@ import { ideaAction } from '../collaboration-actions';
 export const metadata = { title: 'Ideas' };
 export default async function IdeasPage() {
   const user = await requireUser();
+  if (!canUseIdeas((await getWorkspaceAccess(user)).role)) notFound();
   const [ideas, contacts] = await Promise.all([
     listIdeas(user),
-    listContacts(user),
+    listIdeaPeople(user),
   ]);
   return (
     <div className="mx-auto max-w-3xl space-y-7">
       <header>
+        <Link href="/programmes" className="mb-3 inline-block text-xs text-muted-foreground hover:underline">← Master Tracker</Link>
         <h1 className="text-2xl font-semibold tracking-tight">Ideas</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Capture a thought. Give it shape when you’re ready.

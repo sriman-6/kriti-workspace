@@ -30,6 +30,7 @@ export const taskSchema = z
     title: z.string().trim().min(3, 'Give the task a clear title.').max(200),
     description: z.string().trim().max(10000).default(''),
     programmeId: optionalId,
+    trackerSheetId: optionalId.optional(),
     ownerId: z.string().uuid('Choose an owner.'),
     reviewerId: optionalId,
     viewerIds,
@@ -104,6 +105,8 @@ export const programmeSchema = z.object({
     .max(30)
     .regex(/^[a-zA-Z0-9-]+$/, 'Use letters, numbers and hyphens.'),
   description: z.string().trim().max(2000),
+  kind: z.enum(['programme', 'project']).default('programme'),
+  stage: z.enum(['unset', 'planning', 'ongoing', 'completed', 'on_hold']).default('unset'),
 });
 export const personSchema = z.object({
   fullName: z.string().trim().min(2).max(150),

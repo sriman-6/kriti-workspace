@@ -5,6 +5,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -12,6 +13,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { TrackerColumn } from '@/lib/tracker';
 import { sql } from 'drizzle-orm';
 
 export const campusEnum = pgEnum('campus', ['PIL', 'GOA', 'HYD', 'DXB']);
@@ -86,12 +88,24 @@ export const programmes = pgTable('programmes', {
   name: text('name').notNull(),
   code: text('code').notNull().unique(),
   description: text('description'),
-  kind: text('kind', { enum: ['programme', 'initiative'] })
+  kind: text('kind', { enum: ['programme', 'initiative', 'project'] })
     .notNull()
     .default('programme'),
   isActive: boolean('is_active').notNull().default(true),
+  stage: text('stage', { enum: ['unset', 'planning', 'ongoing', 'completed', 'on_hold'] }).notNull().default('unset'),
+  trackerColumns: jsonb('tracker_columns').$type<TrackerColumn[]>().notNull().default([]),
+  version: integer('version').notNull().default(0),
   ...timestamps,
 });
+export const trackerSheets = pgTable('tracker_sheets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  programmeId: uuid('programme_id').notNull().references(() => programmes.id),
+  parentId: uuid('parent_id'),
+  name: text('name').notNull(),
+  columns: jsonb('columns').$type<TrackerColumn[]>().notNull().default([]),
+  version: integer('version').notNull().default(0),
+  ...timestamps,
+}, (table) => [index('tracker_sheets_programme_idx').on(table.programmeId)]);
 export const programmeMembers = pgTable(
   'programme_members',
   {
@@ -115,6 +129,7 @@ export const workTasks = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     programmeId: uuid('programme_id').references(() => programmes.id),
+    trackerSheetId: uuid('tracker_sheet_id').references(() => trackerSheets.id),
     title: text('title').notNull(),
     description: text('description').notNull().default(''),
     ownerId: uuid('owner_id')
@@ -366,6 +381,38 @@ export const ideas = pgTable('ideas', {
   version: integer('version').notNull().default(0),
   ...timestamps,
 });
+export const trackerRows = pgTable('tracker_rows', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  programmeId: uuid('programme_id').notNull().references(() => programmes.id),
+  sheetId: uuid('sheet_id').references(() => trackerSheets.id),
+  linkedSheetId: uuid('linked_sheet_id').references(() => trackerSheets.id),
+  authorId: uuid('author_id').notNull().references(() => users.id),
+  ownerId: uuid('owner_id').references(() => users.id),
+  title: text('title').notNull(), kind: text('kind').notNull().default('update'),
+  status: text('status').notNull().default('planned'), eventOn: date('event_on'),
+  notes: text('notes').notNull().default(''),
+  links: text('links').array().notNull().default(sql`'{}'::text[]`),
+  values: jsonb('values').$type<Record<string, string>>().notNull().default({}),
+  version: integer('version').notNull().default(0),
+  isArchived: boolean('is_archived').notNull().default(false), ...timestamps,
+}, (table) => [index('tracker_rows_scope_idx').on(table.programmeId, table.sheetId)]);
+export const trackerEvents = pgTable('tracker_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  programmeId: uuid('programme_id').notNull().references(() => programmes.id),
+  rowId: uuid('row_id').references(() => trackerRows.id),
+  actorId: uuid('actor_id').notNull().references(() => users.id),
+  message: text('message').notNull(), snapshot: jsonb('snapshot').$type<Record<string, unknown>>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index('tracker_events_scope_idx').on(table.programmeId, table.createdAt)]);
+export const trackerUploads = pgTable('tracker_uploads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  programmeId: uuid('programme_id').notNull().references(() => programmes.id),
+  rowId: uuid('row_id').references(() => trackerRows.id),
+  ownerId: uuid('owner_id').notNull().references(() => users.id),
+  name: text('name').notNull(), contentType: text('content_type').notNull(), size: integer('size').notNull(),
+  content: text('content'), blobPath: text('blob_path'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+}, (table) => [index('tracker_uploads_row_idx').on(table.rowId)]);
 export const ideaMembers = pgTable(
   'idea_members',
   {

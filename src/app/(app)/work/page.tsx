@@ -64,7 +64,7 @@ export default async function WorkPage({
               ? 'Review inbox'
               : view === 'mine'
                 ? 'My work'
-                : 'Work'}
+                : 'My Work'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {view === 'review'
