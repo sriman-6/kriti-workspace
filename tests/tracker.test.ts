@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { createTestDatabase, type TestDatabase } from './helpers/database';
+import { programmeSchema } from '@/lib/schemas/work';
+import { trackerSettingsInput } from '@/lib/schemas/tracker';
+import { PROGRAMME_NAME_MAX_LENGTH } from '@/lib/tracker';
 const holder = vi.hoisted(() => ({ db: null as unknown as TestDatabase }));
 const storage = vi.hoisted(() => ({ read: vi.fn(), remove: vi.fn() }));
 vi.mock('@/lib/db', () => ({
@@ -112,6 +115,30 @@ const row = (extra = {}) => ({
 });
 
 describe('master tracker and linked work', () => {
+  it('creates, lists and renames trackers with full research project titles', async () => {
+    const name = 'A Dual-Approach Framework for Sustainable Menstrual Hygiene: Reusable Cloth Pads and Coffee-Pulp-Based Biodegradable Absorbents';
+    expect(name.length).toBeGreaterThan(120);
+    const programmeId = await createProgramme(people.head!, programmeSchema.parse({
+      name,
+      code: 'FULL-PROJECT-TITLE',
+      description: '',
+      kind: 'project',
+    }));
+    expect((await getMasterTracker(people.head!)).find((item) => item.id === programmeId)?.name).toBe(name);
+    const detail = await getTracker(people.head!, programmeId);
+    expect(detail.programme.name).toBe(name);
+    const revisedName = `${name} — Research and Implementation`;
+    await updateTracker(people.head!, programmeId, {
+      name: revisedName,
+      description: '',
+      stage: 'planning',
+      version: detail.programme.version,
+    });
+    expect((await getTracker(people.head!, programmeId)).programme.name).toBe(revisedName);
+    const tooLong = 'x'.repeat(PROGRAMME_NAME_MAX_LENGTH + 1);
+    expect(programmeSchema.safeParse({ name: tooLong, code: 'LONG', description: '' }).success).toBe(false);
+    expect(trackerSettingsInput.safeParse({ name: tooLong, description: '', stage: 'planning', version: 0 }).success).toBe(false);
+  });
   it('preserves old records and shows existing work as the same task', async () => {
     const taskId = await createWork(people.intern!, {
       title: 'Programme report',

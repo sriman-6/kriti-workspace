@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PROGRAMME_ROLES, WORKSPACE_ROLES } from '@/lib/workspace';
+import { PROGRAMME_NAME_MAX_LENGTH } from '@/lib/tracker';
 
 const optionalId = z
   .union([z.string().uuid(), z.literal(''), z.null()])
@@ -97,7 +98,7 @@ export const progressSchema = z
     message: 'Describe the blocker.',
   });
 export const programmeSchema = z.object({
-  name: z.string().trim().min(3).max(120),
+  name: z.string().trim().min(3).max(PROGRAMME_NAME_MAX_LENGTH, `Use a name of up to ${PROGRAMME_NAME_MAX_LENGTH} characters.`),
   code: z
     .string()
     .trim()

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ChatPanel as SidePanel } from './chat-panel';
 import { WorkForm } from './work-form';
-import { TRACKER_STAGES } from '@/lib/tracker';
+import { PROGRAMME_NAME_MAX_LENGTH, TRACKER_STAGES } from '@/lib/tracker';
 import type { getMasterTracker } from '@/lib/services/tracker';
 import { programmeAction } from '@/app/(app)/work/actions';
 const select = 'h-9 rounded-md border border-input bg-background px-2 text-sm';
@@ -158,10 +158,10 @@ export function MasterTracker({
                     <td className="min-w-52 px-4 py-4">
                       <Link
                         href={`/programmes/${item.id}`}
-                        className="flex items-center gap-2 font-medium hover:underline"
+                        className="flex max-w-xl items-start gap-2 font-medium hover:underline"
                       >
-                        {item.name}
-                        <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 [overflow-wrap:anywhere]">{item.name}</span>
+                        <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                       </Link>
                       <span className="mt-1 block text-[11px] capitalize text-muted-foreground">
                         {item.kind} · {item.members} members
@@ -201,12 +201,13 @@ export function MasterTracker({
         <div className="overflow-y-auto p-5">
           <WorkForm action={programmeAction} submitLabel="Create tracker">
             <Label htmlFor="new-tracker-name">Name</Label>
-            <Input
+            <Textarea
               id="new-tracker-name"
               name="name"
               required
               minLength={3}
-              maxLength={120}
+              maxLength={PROGRAMME_NAME_MAX_LENGTH}
+              rows={3}
               autoFocus
             />
             <div className="grid grid-cols-2 gap-3">

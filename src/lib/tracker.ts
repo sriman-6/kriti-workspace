@@ -1,3 +1,4 @@
+export const PROGRAMME_NAME_MAX_LENGTH = 1000;
 export const TRACKER_STAGES = {
   unset: 'Set stage',
   planning: 'Planning',

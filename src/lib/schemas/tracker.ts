@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  PROGRAMME_NAME_MAX_LENGTH,
   ROW_STATUSES,
   TRACKER_KINDS,
   TRACKER_STAGES,
@@ -51,7 +52,7 @@ export const trackerRowInput = z.object({
   uploadIds: z.array(z.uuid()).max(3).default([]),
 });
 export const trackerSettingsInput = z.object({
-  name: z.string().trim().min(3).max(120),
+  name: z.string().trim().min(3).max(PROGRAMME_NAME_MAX_LENGTH, `Use a name of up to ${PROGRAMME_NAME_MAX_LENGTH} characters.`),
   description: z.string().trim().max(2000),
   stage: z.enum(
     Object.keys(TRACKER_STAGES) as [

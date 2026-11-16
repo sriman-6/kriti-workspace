@@ -2,10 +2,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ROW_STATUSES, TRACKER_STAGES } from '@/lib/tracker';
+import { PROGRAMME_NAME_MAX_LENGTH, ROW_STATUSES, TRACKER_STAGES } from '@/lib/tracker';
 import { PROGRAMME_ROLES } from '@/lib/workspace';
 import { trackerRequest } from '@/lib/client/tracker-request';
 import type {
@@ -64,13 +63,14 @@ export function TrackerSettings({
         >
           <div className="space-y-1.5">
             <Label htmlFor="programme-name">Name</Label>
-            <Input
+            <Textarea
               id="programme-name"
               name="name"
               defaultValue={detail.programme.name}
               required
               minLength={3}
-              maxLength={120}
+              maxLength={PROGRAMME_NAME_MAX_LENGTH}
+              rows={3}
             />
           </div>
           <div className="space-y-1.5">

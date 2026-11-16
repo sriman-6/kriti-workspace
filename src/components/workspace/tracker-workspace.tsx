@@ -208,7 +208,7 @@ export function TrackerWorkspace({
     <div className="mx-auto max-w-7xl space-y-5">
       <header className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 max-w-full">
             <Link
               href="/programmes"
               className="text-xs text-muted-foreground hover:underline"
@@ -216,7 +216,7 @@ export function TrackerWorkspace({
               ← Master Tracker
             </Link>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <h1 className="break-words text-xl font-semibold">
+              <h1 className="min-w-0 max-w-full text-xl font-semibold [overflow-wrap:anywhere]">
                 {detail.programme.name}
               </h1>
               <span className="rounded-full bg-muted px-2 py-1 text-[10px]">
