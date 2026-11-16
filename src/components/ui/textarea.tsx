@@ -6,7 +6,7 @@ export function Textarea({
   className,
   rows = 4,
   ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement>): React.JSX.Element {
+}: React.ComponentProps<'textarea'>): React.JSX.Element {
   return (
     <textarea
       rows={rows}

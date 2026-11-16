@@ -6,10 +6,12 @@ const state = vi.hoisted(() => ({
   user: { id: 'owner' } as { id: string } | null,
   mode: { workFileStorage: 'vercel-blob' },
   reserve: vi.fn(), authorize: vi.fn(), download: vi.fn(), open: vi.fn(), cleanup: vi.fn(),
+  chatCleanup: vi.fn(),
 }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentUser: async () => state.user }));
 vi.mock('@/lib/env', () => ({ env: state.mode, assertProductionConfig: vi.fn() }));
 vi.mock('@/lib/services/workspace', () => ({ reserveWorkUploads: state.reserve, authorizeWorkUpload: state.authorize, downloadWorkFile: state.download, cleanupWorkUploads: state.cleanup }));
+vi.mock('@/lib/services/chat', () => ({ cleanupChatUploads: state.chatCleanup }));
 vi.mock('@/lib/storage/work-blob', () => ({ openWorkBlob: state.open }));
 const { POST: reserve } = await import('@/app/api/work/uploads/reserve/route');
 const { POST: token } = await import('@/app/api/work/uploads/route');
@@ -28,6 +30,7 @@ beforeEach(() => {
   state.authorize.mockReset().mockResolvedValue({ maximumSizeInBytes: 1024, allowedContentTypes: ['application/pdf'],
     validUntil: Date.now() + 300000, allowOverwrite: false, addRandomSuffix: false });
   state.download.mockReset(); state.open.mockReset(); state.cleanup.mockReset().mockResolvedValue(1);
+  state.chatCleanup.mockReset().mockResolvedValue(0);
   // Synthetic signing credential, valid nowhere; no network or real credentials.
   vi.stubEnv('BLOB_READ_WRITE_TOKEN', 'vercel_blob_rw_teststore_synthetic-signing-key');
 });
@@ -67,8 +70,10 @@ describe('upload HTTP boundaries', () => {
     vi.stubEnv('CRON_SECRET', 'local-test-cron-secret');
     expect((await cleanup(new Request('http://localhost:3002/api/cron/uploads'))).status).toBe(401);
     expect(state.cleanup).not.toHaveBeenCalled();
+    expect(state.chatCleanup).not.toHaveBeenCalled();
     expect((await cleanup(new Request('http://localhost:3002/api/cron/uploads', { headers: { authorization: 'Bearer local-test-cron-secret' } }))).status).toBe(200);
     expect(state.cleanup).toHaveBeenCalledOnce();
+    expect(state.chatCleanup).toHaveBeenCalledOnce();
   });
 });
 

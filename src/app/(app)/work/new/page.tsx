@@ -12,12 +12,14 @@ import { createTaskAction } from '../actions';
 import { getMeeting } from '@/lib/services/collaboration';
 import { NotFoundError } from '@/lib/errors';
 import { z } from 'zod';
+import { getChatMessage } from '@/lib/services/chat';
+import { plainMessage } from '@/lib/chat';
 
 export const metadata = { title: 'Create work' };
 export default async function NewTaskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ meeting?: string }>;
+  searchParams: Promise<{ meeting?: string; message?: string }>;
 }) {
   const user = await requireUser();
   const [access, people, programmes] = await Promise.all([
@@ -37,6 +39,15 @@ export default async function NewTaskPage({
   );
   const source = await searchParams;
   let meetingBrief = '';
+  let messageTitle = '';
+  if (source.message) {
+    if (!z.uuid().safeParse(source.message).success) notFound();
+    try {
+      const message = await getChatMessage(user, source.message);
+      messageTitle = plainMessage(message.body).split('\n')[0]!.slice(0, 200);
+      meetingBrief = `From a group discussion\n/groups/${message.groupId}?thread=${message.parentId ?? message.id}\n\n${plainMessage(message.body)}`;
+    } catch (error) { if (error instanceof NotFoundError) notFound(); throw error; }
+  }
   if (source.meeting) {
     if (!z.string().uuid().safeParse(source.meeting).success) notFound();
     try {
@@ -64,6 +75,7 @@ export default async function NewTaskPage({
         </p>
       </div>
       <WorkForm action={createTaskAction} submitLabel="Create work">
+        {source.message ? <p className="text-xs text-muted-foreground">Review the brief and choose who can see this work before creating it. The original group remains private.</p> : null}
         <TaskFields
           people={people}
           programmes={programmes}
@@ -71,7 +83,7 @@ export default async function NewTaskPage({
           canAssignToOthers={canAssign}
           ownProgrammeIds={access.memberships.map((member) => member.programmeId)}
           delegateProgrammeIds={assignable.map((programme) => programme.id)}
-          defaults={{ description: meetingBrief, ownerId: user.id }}
+          defaults={{ title: messageTitle, description: meetingBrief, ownerId: user.id }}
         />
       </WorkForm>
     </div>

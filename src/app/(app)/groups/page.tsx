@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth/session';
-import { listGroups, listContacts } from '@/lib/services/collaboration';
+import { listContacts } from '@/lib/services/collaboration';
+import { listChatGroups } from '@/lib/services/chat';
+import { plainMessage } from '@/lib/chat';
 import { WorkForm } from '@/components/workspace/work-form';
 import { MemberPicker } from '@/components/workspace/member-picker';
 import { Input } from '@/components/ui/input';
@@ -8,10 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { groupAction } from '../collaboration-actions';
 export const metadata = { title: 'Groups' };
-export default async function GroupsPage() {
+export default async function GroupsPage({ searchParams }: { searchParams: Promise<{ create?: string }> }) {
   const user = await requireUser();
+  const query = await searchParams;
   const [groups, contacts] = await Promise.all([
-    listGroups(user),
+    listChatGroups(user),
     listContacts(user),
   ]);
   return (
@@ -22,7 +25,7 @@ export default async function GroupsPage() {
           Work discussions with the people involved.
         </p>
       </header>
-      <details className="rounded-lg border border-border p-4">
+      <details open={query.create === '1'} className="rounded-lg border border-border p-4">
         <summary className="cursor-pointer text-sm font-medium">
           Create a group
         </summary>
@@ -53,7 +56,7 @@ export default async function GroupsPage() {
       </details>
       <div className="divide-y divide-border">
         {groups.length ? (
-          groups.map(({ group, lastReadAt }) => (
+          groups.map((group) => (
             <Link
               key={group.id}
               href={`/groups/${group.id}`}
@@ -62,14 +65,14 @@ export default async function GroupsPage() {
               <div>
                 <h2 className="text-sm font-medium">{group.name}</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {group.description || 'Private work group'}
+                  {plainMessage(group.preview) || 'No messages yet'}
                 </p>
               </div>
               <span className="text-xs text-muted-foreground">
-                {group.isArchived
+                {group.archived
                   ? 'Archived'
-                  : !lastReadAt || group.updatedAt > lastReadAt
-                    ? 'New activity'
+                  : group.unread
+                    ? `${group.unread} unread${group.mentions ? ` · @ ${group.mentions}` : ''}`
                     : ''}
               </span>
             </Link>

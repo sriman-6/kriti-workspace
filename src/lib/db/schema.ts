@@ -325,6 +325,7 @@ export const groupMessages = pgTable(
       .references(() => users.id),
     parentId: uuid('parent_id'),
     body: text('body').notNull(),
+    mentionIds: uuid('mention_ids').array().notNull().default(sql`'{}'::uuid[]`),
     isPinned: boolean('is_pinned').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -334,6 +335,26 @@ export const groupMessages = pgTable(
     index('group_messages_group_idx').on(table.groupId, table.createdAt),
   ],
 );
+export const groupReactions = pgTable('group_reactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  messageId: uuid('message_id').notNull().references(() => groupMessages.id),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  emoji: text('emoji').notNull(),
+}, (table) => [unique('group_reactions_unique').on(table.messageId, table.userId, table.emoji)]);
+
+// Pending uploads are private and expire. Sending a message claims them once.
+export const groupUploads = pgTable('group_uploads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  groupId: uuid('group_id').notNull().references(() => discussionGroups.id),
+  ownerId: uuid('owner_id').notNull().references(() => users.id),
+  messageId: uuid('message_id').references(() => groupMessages.id),
+  name: text('name').notNull(),
+  contentType: text('content_type').notNull(),
+  size: integer('size').notNull(),
+  content: text('content'),
+  blobPath: text('blob_path'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+}, (table) => [index('group_uploads_message_idx').on(table.messageId), index('group_uploads_pending_idx').on(table.expiresAt)]);
 export const ideas = pgTable('ideas', {
   id: uuid('id').primaryKey().defaultRandom(),
   authorId: uuid('author_id')

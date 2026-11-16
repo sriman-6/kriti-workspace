@@ -479,32 +479,39 @@ export async function updateGroup(
     throw new ForbiddenError(
       'Only the group creator can manage membership and pins.',
     );
-  if (input.memberId) {
-    if (input.memberId === user.id && input.remove)
-      throw new ForbiddenError(
-        'The creator remains responsible for this group. Archive it instead.',
-      );
-    if (!input.remove) await assertContacts(user, [input.memberId]);
-    await db
-      .insert(groupMembers)
-      .values({ groupId: id, userId: input.memberId, isActive: !input.remove })
-      .onConflictDoUpdate({
-        target: [groupMembers.groupId, groupMembers.userId],
-        set: { isActive: !input.remove },
-      });
-  }
-  if (input.archive !== undefined)
-    await db
-      .update(discussionGroups)
-      .set({ isArchived: input.archive })
-      .where(eq(discussionGroups.id, id));
-  if (input.pinId)
-    await db
-      .update(groupMessages)
-      .set({ isPinned: input.pin ?? false })
-      .where(
-        and(eq(groupMessages.id, input.pinId), eq(groupMessages.groupId, id)),
-      );
+  if (input.memberId && !input.remove) await assertContacts(user, [input.memberId]);
+  return db.transaction(async (tx) => {
+    await tx
+      .select({ id: discussionGroups.id })
+      .from(discussionGroups)
+      .where(eq(discussionGroups.id, id))
+      .for('update');
+    if (input.memberId) {
+      if (input.memberId === user.id && input.remove)
+        throw new ForbiddenError(
+          'The creator remains responsible for this group. Archive it instead.',
+        );
+      await tx
+        .insert(groupMembers)
+        .values({ groupId: id, userId: input.memberId, isActive: !input.remove })
+        .onConflictDoUpdate({
+          target: [groupMembers.groupId, groupMembers.userId],
+          set: { isActive: !input.remove },
+        });
+    }
+    if (input.archive !== undefined)
+      await tx
+        .update(discussionGroups)
+        .set({ isArchived: input.archive })
+        .where(eq(discussionGroups.id, id));
+    if (input.pinId)
+      await tx
+        .update(groupMessages)
+        .set({ isPinned: input.pin ?? false })
+        .where(
+          and(eq(groupMessages.id, input.pinId), eq(groupMessages.groupId, id)),
+        );
+  });
 }
 export async function markGroupRead(user: User, id: string) {
   await getGroup(user, id);
