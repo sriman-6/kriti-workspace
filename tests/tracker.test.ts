@@ -134,7 +134,7 @@ describe('master tracker and linked work', () => {
     await saveTrackerRow(people.intern!, programmeId, record);
     expect((await downloadTrackerFile(people.intern!, upload!.id)).name).toBe('report.pdf');
     const workId = await createWork(people.intern!, {
-      title: 'Assignment kept after tracker deletion', description: '', programmeId,
+      title: 'Assignment kept after tracker deletion', description: '', programmeId, trackerSheetId: sheetId,
       ownerId: people.intern!.id, reviewerId: null, dueOn: null, priority: 'normal',
     });
     const detail = await getTracker(people.manager!, programmeId);
@@ -151,6 +151,11 @@ describe('master tracker and linked work', () => {
     await expect(getTrackerResources(people.head!, programmeId)).rejects.toThrow('unavailable');
     await expect(downloadTrackerFile(people.intern!, upload!.id)).rejects.toThrow();
     expect((await getWorkDetail(people.intern!, workId)).task.id).toBe(workId);
+    await editWork(people.intern!, workId, 0, {
+      title: 'Retained assignment updated', description: '', programmeId: null, trackerSheetId: null,
+      ownerId: people.intern!.id, reviewerId: null, dueOn: null, priority: 'normal',
+    });
+    expect((await getWorkDetail(people.intern!, workId)).task.title).toBe('Retained assignment updated');
     expect((await holder.db.select().from(programmes).where(eq(programmes.id, programmeId)))[0]?.isActive).toBe(false);
     expect((await holder.db.select().from(trackerRows).where(eq(trackerRows.id, record.id)))).toHaveLength(1);
     expect((await holder.db.select().from(trackerSheets).where(eq(trackerSheets.id, sheetId)))).toHaveLength(1);

@@ -359,7 +359,7 @@ export default async function TaskPage({
               prefix="edit"
               people={choices}
               programmes={programmes}
-              defaults={task}
+              defaults={{ ...task, trackerSheetId: trackerVisible ? task.trackerSheetId : null }}
               currentUserId={user.id}
               creatorId={task.assignerId}
               canAssignToOthers={access.isHead || access.memberships.some((member) => ['lead', 'manager'].includes(member.role))}
